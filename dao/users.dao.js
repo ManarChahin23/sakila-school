@@ -1,4 +1,6 @@
+// dao/users.dao.js
 const database = require('../config/db');
+const logger = require('../util/logger');
 
 const TABLE = 'customer';
 const PK = 'customer_id';
@@ -6,14 +8,14 @@ const PK = 'customer_id';
 const usersDao = {
   // Lijst voor /users
   list(limit = 20, callback) {
-    const sql = 'SELECT ??, ??, ??, ?? FROM ?? ORDER BY ?? LIMIT ?';
-    const params = ['customer_id', 'first_name', 'last_name', 'email', TABLE, PK, Number(limit) || 20];
+  const sql = 'SELECT ??, ??, ??, ?? FROM ?? WHERE ?? = 1 ORDER BY ?? LIMIT ?';
+  const params = ['customer_id', 'first_name', 'last_name', 'email', TABLE, 'active', PK, Number(limit) || 20];
+  database.query(sql, params, (err, rows) => {
+    if (err) return callback(err);
+    return callback(undefined, rows);
+  });
+},
 
-    database.query(sql, params, (err, rows) => {
-      if (err) return callback(err);
-      return callback(undefined, rows);
-    });
-  },
 
   // Eén user ophalen (incl. adres + stad)
   get(userId, callback) {
@@ -36,8 +38,13 @@ const usersDao = {
     const params = [userId];
 
     database.query(sql, params, (err, rows) => {
-      if (err) return callback(err, undefined);
-      return callback(undefined, rows && rows[0]);
+      if (err) {
+        logger.error('users.dao.get - query failed', { err, userId });
+        return callback(err, undefined);
+      }
+      const user = rows && rows[0];
+      logger.info('users.dao.get - success', { userId, found: !!user });
+      return callback(undefined, user);
     });
   },
 
@@ -47,7 +54,10 @@ const usersDao = {
     const params = [TABLE, 'email', email, PK, userId];
 
     database.query(sql, params, (err, result) => {
-      if (err) return callback(err);
+      if (err) {
+        logger.error('users.dao.updateEmail - query failed', { err, userId });
+        return callback(err);
+      }
       return callback(undefined, result.affectedRows);
     });
   },
@@ -65,27 +75,41 @@ const usersDao = {
       }
     }
 
-    if (!sets.length) return callback(undefined, 0); // niets te doen
+    if (!sets.length) {
+      logger.warn('users.dao.update - no fields provided', { userId });
+      return callback(undefined, 0); // niets te doen
+    }
 
     const sql = `UPDATE ?? SET ${sets.join(', ')} WHERE ?? = ?`;
     params.push(PK, userId);
 
     database.query(sql, params, (err, result) => {
-      if (err) return callback(err);
+      if (err) {
+        logger.error('users.dao.update - query failed', { err, userId, fields: Object.keys(data) });
+        return callback(err);
+      }
       return callback(undefined, result.affectedRows);
     });
   },
 
   // Verwijderen
   delete(userId, callback) {
-    const sql = 'DELETE FROM ?? WHERE ?? = ?';
-    const params = [TABLE, PK, userId];
+  const sql = 'UPDATE ?? SET ?? = 0 WHERE ?? = ?';
+  const params = [TABLE, 'active', PK, userId];
+  database.query(sql, params, (err, result) => {
+    if (err) return callback(err);
+    return callback(undefined, result.affectedRows);
+  });
+},
 
-    database.query(sql, params, (err, result) => {
-      if (err) return callback(err);
-      return callback(undefined, result.affectedRows);
-    });
-  },
+restore(userId, callback) {
+  const sql = 'UPDATE ?? SET ?? = 1 WHERE ?? = ?';
+  const params = [TABLE, 'active', PK, userId];
+  database.query(sql, params, (err, result) => {
+    if (err) return callback(err);
+    return callback(undefined, result.affectedRows);
+  });
+}, 
 };
 
 module.exports = usersDao;

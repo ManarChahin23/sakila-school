@@ -6,7 +6,13 @@ const svc = require('../services/users.service');
 router.get('/', (req, res) => {
   svc.list({ limit: 20 }, (err, users) => {
     if (err) return res.status(500).send('Database error');
-    res.render('users/table', { title: 'Users', users });
+    res.render('users/table', {
+      title: 'Users',
+      users,
+      deleted:   req.query.deleted === '1',
+      deletedId: req.query.id || null,      // voor Undo
+      restored:  req.query.restored === '1' // voor "hersteld"-banner
+    });
   });
 });
 
@@ -18,11 +24,10 @@ router.get('/:id/details', (req, res) => {
       title: `${user.first_name} ${user.last_name}`,
       user,
       users: user,
-      success: req.query.success === '1' 
+      success: req.query.success === '1'
     });
   });
 });
-
 
 // Edit-form
 router.get('/:id/edit', (req, res) => {
@@ -32,11 +37,10 @@ router.get('/:id/edit', (req, res) => {
       title: `Edit ${user.first_name}`,
       user,
       users: user,
-      errors: {}                        
+      errors: {}
     });
   });
 });
-
 
 // Save (POST)
 router.post('/:id/edit', (req, res) => {
@@ -47,7 +51,7 @@ router.post('/:id/edit', (req, res) => {
           const model = {
             title: `Edit ${user?.first_name || 'User'}`,
             user:  { ...user, ...req.body },
-            users: { ...user, ...req.body }, 
+            users: { ...user, ...req.body },
             errors: {
               first_name: err.message === 'VALIDATION_FIRST' ? 'First name is required' : undefined,
               last_name:  err.message === 'VALIDATION_LAST'  ? 'Last name is required'  : undefined
@@ -64,5 +68,29 @@ router.post('/:id/edit', (req, res) => {
   });
 });
 
+// Delete (POST)
+router.post('/:id/delete', (req, res) => {
+  svc.remove(req.params.id, (err) => {
+    if (err) {
+      if (err.message === 'BAD_REQUEST') return res.status(400).send('Bad request');
+      if (err.message === 'NOT_FOUND')   return res.status(404).send('Not found');
+      return res.status(500).send('Server error');
+    }
+    // id meesturen, zodat Undo verschijnt
+    res.redirect(`/users?deleted=1&id=${req.params.id}`);
+  });
+});
+
+// Restore (POST)
+router.post('/:id/restore', (req, res) => {
+  svc.restore(req.params.id, (err) => {
+    if (err) {
+      if (err.message === 'BAD_REQUEST') return res.status(400).send('Bad request');
+      if (err.message === 'NOT_FOUND')   return res.status(404).send('Not found');
+      return res.status(500).send('Server error');
+    }
+    res.redirect('/users?restored=1');
+  });
+});
 
 module.exports = router;
