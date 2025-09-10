@@ -1,0 +1,41 @@
+extends ../layout
+
+block content
+  .container.py-4
+    // Succesmelding na opslaan
+    if success
+      .alert.alert-success.alert-dismissible.fade.show(role='alert')
+        strong Gelukt!
+        |  Wijzigingen zijn opgeslagen.
+        button.btn-close(type='button', data-bs-dismiss='alert', aria-label='Close')
+
+    // Zorg dat we altijd een 'u' hebben (user of users alias)
+    - const u = typeof user !== 'undefined' ? user : users;
+
+    // Kaart met gegevens (geen 800x200 image)
+    .card.mt-3.shadow-sm
+      .card-body
+        h3.card-title #{(u.first_name || '').trim()} #{(u.last_name || '').trim()}
+        p.card-text Some quick example text to build on the card title and make up the bulk of the card's content
+
+      ul.list-group.list-group-flush
+        li.list-group-item #{u.email || '—'}
+        // Hieronder placeholders; worden echte waardes zodra je een JOIN met address/city toevoegt
+        li.list-group-item #{u.address || u.address1 || '—'}
+        li.list-group-item #{u.city || '—'}
+
+      .card-body
+        a.btn.btn-primary(href=`/users/${u.customer_id}/edit`) Edit
+        a.btn.btn-warning.ms-2(href='/users') Cancel
+
+  // Verwijder ?success=1 uit de URL zodat refresh de alert niet opnieuw toont
+  script.
+    (function () {
+      try {
+        var url = new URL(window.location.href);
+        if (url.searchParams.has('success')) {
+          url.searchParams.delete('success');
+          window.history.replaceState({}, '', url);
+        }
+      } catch(e) {}
+    })();

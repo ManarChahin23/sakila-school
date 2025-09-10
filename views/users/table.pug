@@ -1,0 +1,22 @@
+extends ../layout
+
+block content
+  .container
+    h1 Users
+    table.table.table-striped
+      thead
+        tr
+          th ID
+          th First name
+          th Last name
+          th Email
+          th Actions
+      tbody
+        each u in users
+          tr
+            td= u.customer_id
+            td= u.first_name
+            td= u.last_name
+            td= u.email
+            td
+              a.btn.btn-primary.btn-sm(href=`/users/${u.customer_id}/details`) Details

@@ -1,0 +1,26 @@
+extends ../layout
+
+block content
+  .container
+    h1.mb-3 Edit #{user.first_name} #{user.last_name}
+
+    form(method="post" action=`/users/${user.customer_id}/edit`)
+      .mb-3
+        label.form-label(for="first_name") First name
+        input.form-control(type="text" id="first_name" name="first_name" required value=user.first_name)
+        if errors && errors.first_name
+          .form-text.text-danger= errors.first_name
+
+      .mb-3
+        label.form-label(for="last_name") Last name
+        input.form-control(type="text" id="last_name" name="last_name" required value=user.last_name)
+        if errors && errors.last_name
+          .form-text.text-danger= errors.last_name
+
+      .mb-3
+        label.form-label(for="email") Email
+        input.form-control(type="email" id="email" name="email" value=user.email)
+
+      .d-flex.gap-2
+        a.btn.btn-warning(href=`/users/${user.customer_id}/details`) Cancel
+        button.btn.btn-primary(type="submit") Save

@@ -1,0 +1,13 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn.lock
+package-lock.json
+
+# Env & secrets
+.env
+.env.*.local
+
+# Editor/system
+.vscode/
+.DS_Store
