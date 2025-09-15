@@ -2,19 +2,23 @@ var express = require('express');
 var router = express.Router();
 const svc = require('../services/users.service');
 
-// Lijst (table)
+
+// Lijst (table) + zoeken + sorteren
 router.get('/', (req, res) => {
-  svc.list({ limit: 20 }, (err, users) => {
+  const { q = '', order = 'DESC' } = req.query; 
+  svc.list({ limit: 20, order, q }, (err, users) => {
     if (err) return res.status(500).send('Database error');
     res.render('users/table', {
       title: 'Users',
       users,
+      q, // voor de zoekbalk
       deleted:   req.query.deleted === '1',
-      deletedId: req.query.id || null,      // voor Undo
-      restored:  req.query.restored === '1' // voor "hersteld"-banner
+      deletedId: req.query.id || null,    // voor Undo
+      restored:  req.query.restored === '1'   // voor "hersteld"-banner
     });
   });
 });
+
 
 // Details (card + Edit/Cancel)
 router.get('/:id/details', (req, res) => {
@@ -92,5 +96,35 @@ router.post('/:id/restore', (req, res) => {
     res.redirect('/users?restored=1');
   });
 });
+
+// Create-form
+router.get('/create', (req, res) => {
+  res.render('users/create', {
+    title: 'New user',
+    user: { first_name: '', last_name: '', email: '' },
+    errors: {}
+  });
+});
+
+// Create (POST)
+router.post('/create', (req, res) => {
+  svc.create(req.body, (err, newId) => {
+    if (err) {
+      if (err.message === 'VALIDATION_FIRST' || err.message === 'VALIDATION_LAST') {
+        return res.status(400).render('users/create', {
+          title: 'New user',
+          user: { ...req.body },
+          errors: {
+            first_name: err.message === 'VALIDATION_FIRST' ? 'First name is required' : undefined,
+            last_name:  err.message === 'VALIDATION_LAST'  ? 'Last name is required'  : undefined
+          }
+        });
+      }
+      return res.status(500).send('Server error');
+    }
+    return res.redirect(`/users/${newId}/details?success=1`);
+  });
+});
+
 
 module.exports = router;

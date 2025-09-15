@@ -2,20 +2,34 @@ extends ../layout
 
 block content
   .container
+    // Meldingen
     if deleted
-      .alert.alert-warning.alert-dismissible.fade.show.d-flex.justify-content-between.align-items-center(role='alert')
+      .alert.alert-warning.alert-dismissible.fade.show.d-flex.justify-content-between.align-items-center(role='alert' data-autohide='true')
         span Gebruiker is gedeactiveerd.
-        if deletedId
-          form.d-inline(method='post', action=`/users/${deletedId}/restore`)
-            button.btn.btn-sm.btn-outline-dark(type='submit') Undo
-        button.btn-close(type='button', data-bs-dismiss='alert', aria-label='Close')
+        .d-flex.align-items-center.gap-2
+          if deletedId
+            form.d-inline(method='post', action=`/users/${deletedId}/restore`)
+              button.btn.btn-sm.btn-outline-dark(type='submit') Undo
+          button.btn-close(type='button', data-bs-dismiss='alert', aria-label='Close')
 
     if restored
-      .alert.alert-success.alert-dismissible.fade.show(role='alert')
+      .alert.alert-success.alert-dismissible.fade.show(role='alert' data-autohide='true')
         | Gebruiker is hersteld.
         button.btn-close(type='button', data-bs-dismiss='alert', aria-label='Close')
 
-    h1 Users
+    // Header
+    .d-flex.align-items-center.justify-content-between.mb-3
+      h1.mb-0 Users
+      a.btn.btn-success(href='/users/create') + New
+
+    // Zoekbalk
+    form(method='get', action='/users', class='mb-3 d-flex gap-2')
+      input.form-control(type='text', name='q', placeholder='Search name of email', value=(q || ''))
+      button.btn.btn-secondary(type='submit') Search
+      if q
+        a.btn.btn-outline-secondary(href='/users') Clear
+
+    // Tabel
     table.table.table-striped
       thead
         tr
@@ -25,37 +39,17 @@ block content
           th Email
           th Actions
       tbody
-        each u in users
+        if users && users.length
+          each u in users
+            tr
+              td= u.customer_id
+              td= u.first_name
+              td= u.last_name
+              td= u.email
+              td
+                a.btn.btn-primary.btn-sm(href=`/users/${u.customer_id}/details`) Details
+                form.d-inline.ms-2(method='post', action=`/users/${u.customer_id}/delete`, onsubmit='return confirm("Weet je zeker dat je deze gebruiker wilt verwijderen?")')
+                  button.btn.btn-danger.btn-sm(type='submit') Delete
+        else
           tr
-            td= u.customer_id
-            td= u.first_name
-            td= u.last_name
-            td= u.email
-            td
-              a.btn.btn-primary.btn-sm(href=`/users/${u.customer_id}/details`) Details
-              form.d-inline.ms-3(method='post', action=`/users/${u.customer_id}/delete`, onsubmit='return confirm("Weet je zeker dat je deze gebruiker wilt verwijderen?")')
-                button.btn.btn-danger.btn-sm(type='submit') Delete
-
-  // Auto-dismiss alerts + verwijder querystring na render
-  script.
-    (function () {
-      var alerts = document.querySelectorAll('.alert');
-      if (alerts.length) {
-        setTimeout(function () {
-          alerts.forEach(function (el) {
-            // Trig het bootstrap-close event en fade out
-            var evt = new Event('close.bs.alert');
-            el.dispatchEvent(evt);
-            el.classList.remove('show');
-            setTimeout(function () {
-              if (el && el.parentNode) el.parentNode.removeChild(el);
-            }, 250);
-          });
-        }, 4000); // 4 seconden
-      }
-      // Haal ?deleted=1&id=.. of ?restored=1 uit de URL
-      if (window.location.search) {
-        var clean = window.location.origin + window.location.pathname;
-        window.history.replaceState({}, document.title, clean);
-      }
-    })();
+            td(colspan='5') Geen resultaten gevonden.
