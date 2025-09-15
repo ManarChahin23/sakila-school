@@ -15,4 +15,6 @@ router.get('/about', function (req, res) {
   res.render('about', { title: 'About', stories: [] });
 });
 
+router.get('/health', (req, res) => res.json({ ok: true }));
+
 module.exports = router;

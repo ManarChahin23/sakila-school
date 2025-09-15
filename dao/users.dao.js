@@ -1,19 +1,38 @@
+// dao/users.dao.js
 const database = require('../config/db');
+const logger = require('../util/logger');
 
-const TABLE = 'customer';
+const iTable = 'customer';
 const PK = 'customer_id';
 
 const usersDao = {
-  // Lijst voor /users
-  list(limit = 20, callback) {
-    const sql = 'SELECT ??, ??, ??, ?? FROM ?? ORDER BY ?? LIMIT ?';
-    const params = ['customer_id', 'first_name', 'last_name', 'email', TABLE, PK, Number(limit) || 20];
+list({ limit = 30, order = 'DESC', q = '' }, callback) {
+  let sql = 'SELECT ??, ??, ??, ?? FROM ?? WHERE ?? = 1';
+  const params = [
+    'customer_id',
+    'first_name',
+    'last_name',
+    'email',
+    iTable,      // 'customer'
+    'active'
+  ];
 
-    database.query(sql, params, (err, rows) => {
-      if (err) return callback(err);
-      return callback(undefined, rows);
-    });
-  },
+   const text = String(q || '').trim(); 
+  if (text) {
+    sql += ' AND (?? LIKE ? OR ?? LIKE ? OR ?? LIKE ?)';
+    const like = `%${text}%`;
+    params.push('first_name', like, 'last_name', like, 'email', like);
+  }
+
+  sql += ` ORDER BY ?? ${order === 'ASC' ? 'ASC' : 'DESC'} LIMIT ?`;
+  params.push(PK, Number(limit) || 20);
+
+  database.query(sql, params, (err, rows) => {
+    if (err) return callback(err);
+    return callback(undefined, rows);
+  });
+},
+
 
   // Eén user ophalen (incl. adres + stad)
   get(userId, callback) {
@@ -36,27 +55,35 @@ const usersDao = {
     const params = [userId];
 
     database.query(sql, params, (err, rows) => {
-      if (err) return callback(err, undefined);
-      return callback(undefined, rows && rows[0]);
+      if (err) {
+        logger.error('users.dao.get - query failed', { err, userId });
+        return callback(err, undefined);
+      }
+      const user = rows && rows[0];
+      logger.info('users.dao.get - success', { userId, found: !!user });
+      return callback(undefined, user);
     });
   },
 
-  // Alleen email bijwerken (les-stijl)
+  // Alleen email bijwerken
   updateEmail(email, userId, callback) {
     const sql = 'UPDATE ?? SET ?? = ? WHERE ?? = ?';
-    const params = [TABLE, 'email', email, PK, userId];
+    const params = [iTable, 'email', email, PK, userId];
 
     database.query(sql, params, (err, result) => {
-      if (err) return callback(err);
+      if (err) {
+        logger.error('users.dao.updateEmail - query failed', { err, userId });
+        return callback(err);
+      }
       return callback(undefined, result.affectedRows);
     });
   },
 
-  // Meerdere velden bijwerken (first_name, last_name, email) – dynamisch
+  // Meerdere velden bijwerken (first_name, last_name, email)
   update(data, userId, callback) {
     const allowed = ['first_name', 'last_name', 'email'];
     const sets = [];
-    const params = [TABLE];
+    const params = [iTable];
 
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
@@ -65,27 +92,56 @@ const usersDao = {
       }
     }
 
-    if (!sets.length) return callback(undefined, 0); // niets te doen
+    if (!sets.length) {
+      logger.warn('users.dao.update - no fields provided', { userId });
+      return callback(undefined, 0);
+    }
 
     const sql = `UPDATE ?? SET ${sets.join(', ')} WHERE ?? = ?`;
     params.push(PK, userId);
 
     database.query(sql, params, (err, result) => {
-      if (err) return callback(err);
+      if (err) {
+        logger.error('users.dao.update - query failed', { err, userId, fields: Object.keys(data) });
+        return callback(err);
+      }
       return callback(undefined, result.affectedRows);
     });
   },
 
-  // Verwijderen
+  // Deactiveren (soft delete)
   delete(userId, callback) {
-    const sql = 'DELETE FROM ?? WHERE ?? = ?';
-    const params = [TABLE, PK, userId];
-
+    const sql = 'UPDATE ?? SET ?? = 0 WHERE ?? = ?';
+    const params = [iTable, 'active', PK, userId];
     database.query(sql, params, (err, result) => {
       if (err) return callback(err);
       return callback(undefined, result.affectedRows);
     });
   },
+
+  // Herstellen
+  restore(userId, callback) {
+    const sql = 'UPDATE ?? SET ?? = 1 WHERE ?? = ?';
+    const params = [iTable, 'active', PK, userId];
+    database.query(sql, params, (err, result) => {
+      if (err) return callback(err);
+      return callback(undefined, result.affectedRows);
+    });
+  },
+
+  // Create
+  create(user, cb) {
+    const sql = `
+      INSERT INTO customer (store_id, first_name, last_name, email, address_id, active)
+      VALUES (1, ?, ?, ?, 1, 1)
+    `;
+    const params = [user.first_name, user.last_name, user.email || null];
+
+    database.query(sql, params, (err, result) => {
+      if (err) return cb(err);
+      return cb(null, result.insertId); // nieuwe customer_id
+    });
+  }
 };
 
 module.exports = usersDao;

@@ -1,5 +1,5 @@
 const svc = require('../services/films.service');
-const { logger } = require('../util/logger');
+const logger = require('../util/logger'); // <-- fix hier!
 
 function list(req, res) {
   svc.list(req.query, (err, rows) => {

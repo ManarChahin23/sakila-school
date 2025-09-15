@@ -1,0 +1,26 @@
+extends ../layout
+
+block content
+  .container
+    h1 New user
+
+    form(method='post', action='/users/create')
+      .mb-3
+        label.form-label(for='first_name') First name
+        input.form-control(name='first_name', id='first_name', value=user.first_name, class=errors.first_name ? 'is-invalid' : '')
+        if errors.first_name
+          .invalid-feedback= errors.first_name
+
+      .mb-3
+        label.form-label(for='last_name') Last name
+        input.form-control(name='last_name', id='last_name', value=user.last_name, class=errors.last_name ? 'is-invalid' : '')
+        if errors.last_name
+          .invalid-feedback= errors.last_name
+
+      .mb-3
+        label.form-label(for='email') Email (optional)
+        input.form-control(type='email', name='email', id='email', value=user.email)
+
+      .d-flex.gap-2
+        a.btn.btn-outline-secondary(href='/users') Cancel
+        button.btn.btn-success(type='submit') Create
