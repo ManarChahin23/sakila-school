@@ -1,0 +1,20 @@
+extends ../layout
+
+block content
+  .container.mt-4
+    .row.justify-content-center
+      .col-md-6
+        h1.mb-3 Login
+
+        if error
+          .alert.alert-danger(role='alert')= error
+
+        form(method='post', action='/auth/login')
+          .mb-3
+            label.form-label(for='username') Gebruikersnaam
+            input#username.form-control(type='text', name='username', required, value=(username || ''))
+          .mb-3
+            label.form-label(for='password') Wachtwoord
+            input#password.form-control(type='password', name='password', required)
+
+          button.btn.btn-primary(type='submit') Log in

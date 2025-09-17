@@ -1,0 +1,46 @@
+extends ../layout
+
+block content
+  .container.mt-4
+    h1.mb-3 Medewerker registreren
+
+    if error
+      .alert.alert-danger(role='alert')= error
+    if success
+      .alert.alert-success(role='alert')= success
+
+    form(method='post', action='/auth/register')
+      .mb-3
+        label.form-label(for='username') Gebruikersnaam
+        input#username.form-control(
+          type='text'
+          name='username'
+          required
+          value=((form && form.username) || '')
+        )
+
+      .mb-3
+        label.form-label(for='password') Wachtwoord
+        input#password.form-control(
+          type='password'
+          name='password'
+          required
+        )
+
+      .mb-3
+        label.form-label(for='role') Rol
+        select#role.form-select(name='role', required)
+          - const sel = (form && form.role) || 'staff';
+          option(value='staff', selected=sel==='staff') Medewerker
+          option(value='admin', selected=sel==='admin') Admin
+
+      .mb-3
+        label.form-label(for='staff_id') (Optioneel) Koppel aan bestaande staff_id
+        input#staff_id.form-control(
+          type='number'
+          name='staff_id'
+          min='1'
+          value=((form && form.staff_id) || '')
+        )
+
+      button.btn.btn-primary(type='submit') Registreer
