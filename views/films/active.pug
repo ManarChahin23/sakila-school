@@ -1,0 +1,35 @@
+extends ../layout
+
+block content
+  .container
+    h1.mb-3 Verhuurd
+
+    form.row.g-2.mb-3(action='/rentals/active', method='get')
+      .col-md-3
+        label.form-label(for='store') Store
+        select#store.form-select(name='store')
+          option(value='all' selected=store==='all') Alle stores
+          option(value='1' selected=store==='1') Store 1
+          option(value='2' selected=store==='2') Store 2
+      .col-md-3.align-self-end
+        button.btn.btn-primary(type='submit') Filteren
+
+    if list && list.length
+      table.table.table-striped.align-middle
+        thead
+          tr
+            th Rental ID
+            th Film
+            th Klant
+            th Store
+            th Verhuurd op
+        tbody
+          each r in list
+            tr
+              td #{r.rental_id}
+              td #{r.title}
+              td #{r.first_name} #{r.last_name}
+              td #{r.store_id}
+              td= new Date(r.rental_date).toLocaleString('nl-NL')
+    else
+      p.text-muted Geen lopende verhuur.

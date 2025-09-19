@@ -1,0 +1,57 @@
+extends ../layout
+
+block content
+  .container
+    h1.mb-3 Filmoverzicht
+
+    // Filters
+    form.row.g-2.mb-3(action='/films/overview', method='get')
+      .col-md-6.position-relative
+        label.form-label(for='q') Zoek op titel
+        input#q.form-control(type='text', name='q', placeholder='Bijv. ALABAMA', value=q, autocomplete='off')
+        ul#films_q_results.list-group.position-absolute.w-100.mt-1(style='z-index:1000; display:none;')
+      .col-md-3
+        label.form-label(for='store') Store
+        select#store.form-select(name='store')
+          option(value='1' selected=store==='1') Store 1
+          option(value='2' selected=store==='2') Store 2
+          option(value='all' selected=store==='all') Alle stores
+      .col-md-3.align-self-end
+        button.btn.btn-primary(type='submit') Filteren
+
+    if rows && rows.length
+      table.table.table-hover.align-middle
+        thead
+          tr
+            th Titel
+            th.text-end Copies
+            th.text-end Verhuurd
+            th.text-end Beschikbaar
+        tbody
+          each r in rows
+            tr
+              td #{r.title}
+              td.text-end #{r.copies}
+              td.text-end #{r.out_now}
+              td.text-end
+                if r.available > 0
+                  span.badge.text-bg-success #{r.available}
+                else
+                  span.badge.text-bg-secondary 0
+    else
+      p.text-muted Geen films gevonden met deze filters.
+
+block scripts
+  script(src="/javascripts/film-search.js")
+  script.
+    // Dropdown bij typen in het overzicht (optioneel: auto-submit bij kiezen)
+    FilmSearch.bindAutocomplete({
+      inputId: 'q',
+      listId: 'films_q_results',
+      storeSelectId: 'store',
+      onPick: function (it) {
+        // Vul het gekozen item in het zoekveld en dien het formulier in:
+        const frm = document.querySelector('form[action="/films/overview"]');
+        if (frm) frm.submit();
+      }
+    });

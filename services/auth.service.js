@@ -4,7 +4,7 @@ const dao = require('../dao/auth.dao');
 
 /**
  * Login: haalt account op en vergelijkt het wachtwoord met bcrypt.
- * Geeft bij succes een minimal account-object terug dat je in de session bewaart.
+ * Geeft bij succes een minimal account-object terug (voor in req.session.user).
  */
 exports.login = (username, password, cb) => {
   const u = String(username || '').trim().toLowerCase();
@@ -17,9 +17,10 @@ exports.login = (username, password, cb) => {
     if (!user) return cb(new Error('INVALID'));
 
     const hash = user.password_hash || '';
-
-    // Alleen bcrypt toestaan (we slaan toch gehasht op)
-    if (!hash.startsWith('$2')) return cb(new Error('INVALID'));
+    if (!hash.startsWith('$2')) {
+      // we verwachten een bcrypt-hash
+      return cb(new Error('INVALID'));
+    }
 
     bcrypt.compare(p, hash, (e, ok) => {
       if (e) return cb(e);
@@ -31,7 +32,8 @@ exports.login = (username, password, cb) => {
         name: (user.first_name && user.last_name)
           ? `${user.first_name} ${user.last_name}`
           : user.username,
-        role: user.role || 'staff'
+        role: user.role || 'staff',
+        staff_id: user.staff_id || null   // ← belangrijk: meegeven aan session
       };
       return cb(null, account);
     });
@@ -39,7 +41,7 @@ exports.login = (username, password, cb) => {
 };
 
 /**
- * Registratie door de admin: maakt een nieuw account met bcrypt-hash.
+ * Registratie (alleen admin): maakt nieuw account met bcrypt-hash.
  * - username: uniek (lowercased)
  * - role: 'admin' of 'staff' (default 'staff')
  * - staffId: optioneel koppelen aan staff.staff_id
@@ -57,7 +59,6 @@ exports.register = (form, cb) => {
 
     dao.createAccount(username, hash, role, staffId, (e, newId) => {
       if (e) {
-        // MySQL duplicate key
         if (e.code === 'ER_DUP_ENTRY') return cb(new Error('DUP_USERNAME'));
         return cb(e);
       }

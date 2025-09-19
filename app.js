@@ -13,7 +13,12 @@ const usersRouter   = require('./routes/users');
 const filmsRouter   = require('./routes/films');
 const authRouter    = require('./routes/auth'); // login/logout
 
+
+const rentalsRouter = require('./routes/rentals');
 const { isLoggedIn } = require('./controllers/auth.controller');
+
+const filmsApiRouter   = require('./routes/films');       // jouw bestaande /api/films
+const filmsPageRouter  = require('./routes/films.page');
 
 const app = express();
 
@@ -48,6 +53,10 @@ app.use('/auth', authRouter);              // login/logout
 app.use('/', indexRouter);
 app.use('/api/films', filmsRouter);
 app.use('/users', isLoggedIn, usersRouter); // alles onder /users vereist login
+app.use('/rentals', isLoggedIn, rentalsRouter);      // protect met login
+app.use('/films', isLoggedIn, filmsPageRouter);
+app.use('/api/films', filmsApiRouter);  
+
 
 // 404
 app.use((req, res, next) => next(createError(404)));
@@ -58,5 +67,6 @@ app.use((err, req, res, next) => {
   res.locals.error   = req.app.get('env') === 'development' ? err : {};
   res.status(err.status || 500).render('error');
 });
+
 
 module.exports = app;

@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 const svc = require('../services/users.service');
+const rentalsSvc = require('../services/rentals.service');
+
 
 
 // Lijst (table) + zoeken + sorteren
@@ -24,14 +26,22 @@ router.get('/', (req, res) => {
 router.get('/:id/details', (req, res) => {
   svc.getById(req.params.id, (err, user) => {
     if (err) return res.status(500).send('Server error');
-    res.render('users/details', {
-      title: `${user.first_name} ${user.last_name}`,
-      user,
-      users: user,
-      success: req.query.success === '1'
+
+    rentalsSvc.listActiveForCustomer(req.params.id, (e2, rentals) => {
+      const model = {
+        title: `${user.first_name} ${user.last_name}`,
+        user,
+        users: user,
+        success: req.query.success === '1',
+        rentOk: req.query.rentOk || null,
+        rentErr: req.query.rentErr || null,
+        rentals: rentals || []
+      };
+      res.render('users/details', model);
     });
   });
 });
+
 
 // Edit-form
 router.get('/:id/edit', (req, res) => {
