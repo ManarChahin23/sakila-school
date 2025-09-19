@@ -1,20 +1,8 @@
-var express = require('express');
-var router = express.Router();
-const svc = require('../services/films.service'); // service-laag
+// routes/index.js
+const express = require('express');
+const router = express.Router();
 
-/* GET home page (SSR met Pug). */
-router.get('/', function (req, res) {
-  svc.list({ limit: 20 }, (err, rows) => {
-    if (err) return res.status(500).send('Database error');
-    res.render('index', { title: 'Sakila Films', films: rows });
-  });
-});
-
-/* About-pagina voor user stories */
-router.get('/about', function (req, res) {
-  res.render('about', { title: 'About', stories: [] });
-});
-
-router.get('/health', (req, res) => res.json({ ok: true }));
+// Ga gewoon naar klantenoverzicht
+router.get('/', (req, res) => res.redirect('/users'));
 
 module.exports = router;

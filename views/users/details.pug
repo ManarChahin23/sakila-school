@@ -12,30 +12,98 @@ block content
     // Zorg dat we altijd een 'u' hebben (user of users alias)
     - const u = typeof user !== 'undefined' ? user : users;
 
-    // Kaart met gegevens (geen 800x200 image)
+    // Kaart met gegevens
     .card.mt-3.shadow-sm
       .card-body
         h3.card-title #{(u.first_name || '').trim()} #{(u.last_name || '').trim()}
         p.card-text Some quick example text to build on the card title and make up the bulk of the card's content
-
       ul.list-group.list-group-flush
         li.list-group-item #{u.email || '—'}
-        // Hieronder placeholders; worden echte waardes zodra je een JOIN met address/city toevoegt
         li.list-group-item #{u.address || u.address1 || '—'}
         li.list-group-item #{u.city || '—'}
-
       .card-body
         a.btn.btn-primary(href=`/users/${u.customer_id}/edit`) Edit
         a.btn.btn-warning.ms-2(href='/users') Cancel
 
-  // Verwijder ?success=1 uit de URL zodat refresh de alert niet opnieuw toont
+    // Meldingen voor verhuur-acties
+    if rentOk
+      .alert.alert-success(role='alert', data-autohide='true')
+        if rentOk === 'returned'
+          | Verhuur ingeleverd.
+        else
+          | Nieuwe verhuur aangemaakt.
+    if rentErr
+      .alert.alert-danger(role='alert')
+        if rentErr === 'nostock'
+          | Geen exemplaren beschikbaar van deze film.
+        else
+          | Verhuuractie mislukt.
+
+    // Actieve verhuur
+    if rentals && rentals.length
+      h3.mt-4 Actieve verhuur
+      table.table.table-striped
+        thead
+          tr
+            th Rental ID
+            th Film
+            th Verhuurd op
+            th Actie
+        tbody
+          each r in rentals
+            tr
+              td= r.rental_id
+              td= r.title
+              td= new Date(r.rental_date).toLocaleString('nl-NL')
+              td
+                form.d-inline(method='post', action=`/rentals/${r.rental_id}/return`)
+                  input(type='hidden', name='backToCustomer', value=u.customer_id)
+                  button.btn.btn-sm.btn-outline-dark(type='submit', onclick='return confirm("Innemen bevestigen?")') Innemen
+    else
+      p.mt-4.text-muted Geen actieve verhuur.
+
+    // ---------- Nieuwe verhuur (met dropdown) ----------
+    // Stijlen voor de scrollbare suggesties
+    style.
+      #film_results {
+        position: absolute; left: 0; right: 0;
+        z-index: 1000; display: none;
+        max-height: 260px; overflow-y: auto;
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
+      }
+
+    h3.mt-4 Nieuwe verhuur
+    // onderkant uitlijnen; kolommen gelijk
+    form#rentForm(method='post', action='/rentals/create', class='row g-3 align-items-end position-relative')
+      // hidden velden
+      input(type='hidden', name='customer_id', value=u.customer_id)
+      input#film_id_hidden(type='hidden', name='film_id')
+
+      .col-md-6.position-relative
+        label.form-label(for='film_title') Film (titel zoeken)
+        input#film_title.form-control(type='text', placeholder='Begin met typen (min. 2 letters)…', autocomplete='off' aria-expanded='false')
+        small.text-muted.d-block.mb-0 Kies een titel uit de suggesties; het filmnummer wordt automatisch ingevuld.
+        ul#film_results.list-group
+
+      .col-md-3
+        label.form-label(for='store_id') Store
+        select#store_id.form-select(name='store_id')
+          option(value='1' selected) Store 1
+          option(value='2') Store 2
+        small.invisible.d-block.mb-0 &nbsp;
+
+      .col-md-3
+        label.form-label.invisible(for='rentSubmit') Uitlenen
+        button#rentSubmit.btn.btn-primary.py-2.px-3(type='submit') Uitlenen
+        small.invisible.d-block.mb-0 &nbsp;
+
+block scripts
+  // herbruikbaar script voor autocomplete
+  script(src="/javascripts/film-search.js")
   script.
-    (function () {
-      try {
-        var url = new URL(window.location.href);
-        if (url.searchParams.has('success')) {
-          url.searchParams.delete('success');
-          window.history.replaceState({}, '', url);
-        }
-      } catch(e) {}
-    })();
+    FilmSearch.bindAutocomplete({
+      inputId: 'film_title',
+      listId: 'film_results',
+      hiddenId: 'film_id_hidden',
+      storeSelectId: 'store_id'
+    });
