@@ -1,8 +1,5 @@
-// services/rentals.service.js
 const dao = require('../dao/rentals.dao');
 
-// Maak rental: zoekt eerst vrije inventory_id, maakt daarna rental + payment
-// signature: create(customerId, filmId, storeId, staffId, cb)
 exports.create = (customerId, filmId, storeId, staffId, cb) => {
   const c = Number(customerId), f = Number(filmId), s = Number(storeId);
   const st = Number(staffId);

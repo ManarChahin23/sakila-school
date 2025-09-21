@@ -2,39 +2,55 @@
 const database = require('../config/db');
 const logger = require('../util/logger');
 
-const iTable = 'customer';
+const TABLE = 'customer';
 const PK = 'customer_id';
 
 const usersDao = {
-list({ limit = 30, order = 'DESC', q = '' }, callback) {
-  let sql = 'SELECT ??, ??, ??, ?? FROM ?? WHERE ?? = 1';
-  const params = [
-    'customer_id',
-    'first_name',
-    'last_name',
-    'email',
-    iTable,      // 'customer'
-    'active'
-  ];
+  // Lijst + zoeken + sorteren + OFFSET/LIMIT
+  list({ limit = 30, offset = 0, order = 'DESC', q = '' }, callback) {
+    let sql = `
+      SELECT customer_id, first_name, last_name, email
+      FROM ${TABLE}
+      WHERE active = 1
+    `;
+    const params = [];
 
-   const text = String(q || '').trim(); 
-  if (text) {
-    sql += ' AND (?? LIKE ? OR ?? LIKE ? OR ?? LIKE ?)';
-    const like = `%${text}%`;
-    params.push('first_name', like, 'last_name', like, 'email', like);
-  }
+    const text = String(q || '').trim();
+    if (text) {
+      sql += ' AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
+      const like = `%${text}%`;
+      params.push(like, like, like);
+    }
 
-  sql += ` ORDER BY ?? ${order === 'ASC' ? 'ASC' : 'DESC'} LIMIT ?`;
-  params.push(PK, Number(limit) || 20);
+    const safeOrder = order === 'ASC' ? 'ASC' : 'DESC';
+    sql += ` ORDER BY ${PK} ${safeOrder} LIMIT ? OFFSET ?`;
+    params.push(Number(limit) || 20, Number(offset) || 0);
 
-  database.query(sql, params, (err, rows) => {
-    if (err) return callback(err);
-    return callback(undefined, rows);
-  });
-},
+    database.query(sql, params, (err, rows) => {
+      if (err) return callback(err);
+      return callback(undefined, rows);
+    });
+  },
 
+  // Totaal (voor paginering)
+  countAll(q = '', callback) {
+    let sql = `SELECT COUNT(*) AS total FROM ${TABLE} WHERE active = 1`;
+    const params = [];
 
-  // Eén user ophalen (incl. adres + stad)
+    const text = String(q || '').trim();
+    if (text) {
+      sql += ' AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
+      const like = `%${text}%`;
+      params.push(like, like, like);
+    }
+
+    database.query(sql, params, (err, rows) => {
+      if (err) return callback(err);
+      return callback(undefined, rows && rows[0] ? rows[0].total : 0);
+    });
+  },
+
+  // Eén user halen (incl. adres/city indien aanwezig, read-only in UI)
   get(userId, callback) {
     const sql = `
       SELECT
@@ -49,87 +65,69 @@ list({ limit = 30, order = 'DESC', q = '' }, callback) {
         a.phone,
         ci.city
       FROM customer c
-      JOIN address a ON c.address_id = a.address_id
-      JOIN city    ci ON a.city_id    = ci.city_id
-      WHERE c.customer_id = ?`;
-    const params = [userId];
-
-    database.query(sql, params, (err, rows) => {
+      LEFT JOIN address a ON c.address_id = a.address_id
+      LEFT JOIN city    ci ON a.city_id    = ci.city_id
+      WHERE c.${PK} = ?
+    `;
+    database.query(sql, [userId], (err, rows) => {
       if (err) {
         logger.error('users.dao.get - query failed', { err, userId });
-        return callback(err, undefined);
+        return callback(err);
       }
-      const user = rows && rows[0];
-      logger.info('users.dao.get - success', { userId, found: !!user });
-      return callback(undefined, user);
+      return callback(undefined, rows && rows[0]);
     });
   },
 
   // Alleen email bijwerken
   updateEmail(email, userId, callback) {
-    const sql = 'UPDATE ?? SET ?? = ? WHERE ?? = ?';
-    const params = [iTable, 'email', email, PK, userId];
-
-    database.query(sql, params, (err, result) => {
-      if (err) {
-        logger.error('users.dao.updateEmail - query failed', { err, userId });
-        return callback(err);
-      }
+    const sql = `UPDATE ${TABLE} SET email = ? WHERE ${PK} = ?`;
+    database.query(sql, [email, userId], (err, result) => {
+      if (err) return callback(err);
       return callback(undefined, result.affectedRows);
     });
   },
 
-  // Meerdere velden bijwerken (first_name, last_name, email)
+  // Meerdere velden (first_name, last_name, email)
   update(data, userId, callback) {
     const allowed = ['first_name', 'last_name', 'email'];
     const sets = [];
-    const params = [iTable];
+    const params = [];
 
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        sets.push('?? = ?');
-        params.push(key, data[key]);
+        sets.push(`${key} = ?`);
+        params.push(data[key]);
       }
     }
+    if (!sets.length) return callback(undefined, 0);
 
-    if (!sets.length) {
-      logger.warn('users.dao.update - no fields provided', { userId });
-      return callback(undefined, 0);
-    }
-
-    const sql = `UPDATE ?? SET ${sets.join(', ')} WHERE ?? = ?`;
-    params.push(PK, userId);
+    const sql = `UPDATE ${TABLE} SET ${sets.join(', ')} WHERE ${PK} = ?`;
+    params.push(userId);
 
     database.query(sql, params, (err, result) => {
-      if (err) {
-        logger.error('users.dao.update - query failed', { err, userId, fields: Object.keys(data) });
-        return callback(err);
-      }
+      if (err) return callback(err);
       return callback(undefined, result.affectedRows);
     });
   },
 
-  // Deactiveren (soft delete)
+  // Soft delete / restore
   delete(userId, callback) {
-    const sql = 'UPDATE ?? SET ?? = 0 WHERE ?? = ?';
-    const params = [iTable, 'active', PK, userId];
-    database.query(sql, params, (err, result) => {
+    const sql = `UPDATE ${TABLE} SET active = 0 WHERE ${PK} = ?`;
+    database.query(sql, [userId], (err, result) => {
       if (err) return callback(err);
       return callback(undefined, result.affectedRows);
     });
   },
 
-  // Herstellen
   restore(userId, callback) {
-    const sql = 'UPDATE ?? SET ?? = 1 WHERE ?? = ?';
-    const params = [iTable, 'active', PK, userId];
-    database.query(sql, params, (err, result) => {
+    const sql = `UPDATE ${TABLE} SET active = 1 WHERE ${PK} = ?`;
+    database.query(sql, [userId], (err, result) => {
       if (err) return callback(err);
       return callback(undefined, result.affectedRows);
     });
   },
 
-  // Create
+  // Create zonder adres (address_id=1 om constraints te voldoen)
   create(user, cb) {
     const sql = `
       INSERT INTO customer (store_id, first_name, last_name, email, address_id, active)
@@ -139,7 +137,7 @@ list({ limit = 30, order = 'DESC', q = '' }, callback) {
 
     database.query(sql, params, (err, result) => {
       if (err) return cb(err);
-      return cb(null, result.insertId); // nieuwe customer_id
+      return cb(null, result.insertId);
     });
   }
 };

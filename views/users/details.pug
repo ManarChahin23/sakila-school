@@ -2,21 +2,17 @@ extends ../layout
 
 block content
   .container.py-4
-    // Succesmelding na opslaan
     if success
       .alert.alert-success.alert-dismissible.fade.show(role='alert')
         strong Gelukt!
         |  Wijzigingen zijn opgeslagen.
         button.btn-close(type='button', data-bs-dismiss='alert', aria-label='Close')
 
-    // Zorg dat we altijd een 'u' hebben (user of users alias)
     - const u = typeof user !== 'undefined' ? user : users;
 
-    // Kaart met gegevens
     .card.mt-3.shadow-sm
       .card-body
         h3.card-title #{(u.first_name || '').trim()} #{(u.last_name || '').trim()}
-        p.card-text Some quick example text to build on the card title and make up the bulk of the card's content
       ul.list-group.list-group-flush
         li.list-group-item #{u.email || '—'}
         li.list-group-item #{u.address || u.address1 || '—'}
@@ -25,7 +21,6 @@ block content
         a.btn.btn-primary(href=`/users/${u.customer_id}/edit`) Edit
         a.btn.btn-warning.ms-2(href='/users') Cancel
 
-    // Meldingen voor verhuur-acties
     if rentOk
       .alert.alert-success(role='alert', data-autohide='true')
         if rentOk === 'returned'
@@ -39,7 +34,6 @@ block content
         else
           | Verhuuractie mislukt.
 
-    // Actieve verhuur
     if rentals && rentals.length
       h3.mt-4 Actieve verhuur
       table.table.table-striped
@@ -62,27 +56,18 @@ block content
     else
       p.mt-4.text-muted Geen actieve verhuur.
 
-    // ---------- Nieuwe verhuur (met dropdown) ----------
-    // Stijlen voor de scrollbare suggesties
     style.
-      #film_results {
-        position: absolute; left: 0; right: 0;
-        z-index: 1000; display: none;
-        max-height: 260px; overflow-y: auto;
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-      }
+      #film_results { position: absolute; left: 0; right: 0; z-index: 1000; display: none; max-height: 260px; overflow-y: auto; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); }
 
     h3.mt-4 Nieuwe verhuur
-    // onderkant uitlijnen; kolommen gelijk
     form#rentForm(method='post', action='/rentals/create', class='row g-3 align-items-end position-relative')
-      // hidden velden
       input(type='hidden', name='customer_id', value=u.customer_id)
       input#film_id_hidden(type='hidden', name='film_id')
 
       .col-md-6.position-relative
         label.form-label(for='film_title') Film (titel zoeken)
         input#film_title.form-control(type='text', placeholder='Begin met typen (min. 2 letters)…', autocomplete='off' aria-expanded='false')
-        small.text-muted.d-block.mb-0 Kies een titel uit de suggesties; het filmnummer wordt automatisch ingevuld.
+        small.text-muted.d-block.mb-0 Kies een titel uit de suggesties
         ul#film_results.list-group
 
       .col-md-3
@@ -98,7 +83,6 @@ block content
         small.invisible.d-block.mb-0 &nbsp;
 
 block scripts
-  // herbruikbaar script voor autocomplete
   script(src="/javascripts/film-search.js")
   script.
     FilmSearch.bindAutocomplete({
