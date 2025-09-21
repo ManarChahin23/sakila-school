@@ -18,7 +18,7 @@ Een webapplicatie voor het beheren en verhuren van films. Medewerkers kunnen inl
 - Bootstrap 5 voor styling
 - `express-session` voor authenticatie/sessies
 
-##Belangrijke mappen/bestanden
+## Belangrijke mappen/bestanden
 
 app.js                     # Express app configuratie + middleware + route mounting
 routes/
