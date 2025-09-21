@@ -1,4 +1,3 @@
-// controllers/rentals.controller.js
 const svc = require('../services/rentals.service');
 
 // POST /rentals/create

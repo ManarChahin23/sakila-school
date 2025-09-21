@@ -24,10 +24,17 @@ block content
 
     // Zoekbalk
     form(method='get', action='/users', class='mb-3 d-flex gap-2')
-      input.form-control(type='text', name='q', placeholder='Search name of email', value=(q || ''))
+      input.form-control(type='text', name='q', placeholder='Search name or email', value=(q || ''))
+      input(type='hidden', name='order', value=order)
       button.btn.btn-secondary(type='submit') Search
       if q
         a.btn.btn-outline-secondary(href='/users') Clear
+
+    // Teller
+    //- const startRow = total ? (currentPage - 1) * limit + 1 : 0
+    //- const endRow = Math.min(currentPage * limit, total)
+    //p.text-muted.mb-2
+      | Showing #{startRow}-#{endRow} of #{total} result(s)
 
     // Tabel
     table.table.table-striped
@@ -53,3 +60,30 @@ block content
         else
           tr
             td(colspan='5') Geen resultaten gevonden.
+
+    // Paginering
+    - const qs = (q ? ('&q=' + encodeURIComponent(q)) : '') + (order ? ('&order=' + encodeURIComponent(order)) : '')
+    if totalPages && totalPages > 1
+      nav(aria-label='Paginering').mt-3
+        ul.pagination.justify-content-center
+          // Previous
+          if currentPage > 1
+            li.page-item
+              a.page-link(href=`?page=${currentPage - 1}${qs}`) Previous
+          else
+            li.page-item.disabled
+              span.page-link Previous
+
+          // Page numbers
+          each v, idx in Array(totalPages).fill(0)
+            - const p = idx + 1
+            li.page-item(class=(p === currentPage ? 'active' : ''))
+              a.page-link(href=`?page=${p}${qs}`)= p
+
+          // Next
+          if currentPage < totalPages
+            li.page-item
+              a.page-link(href=`?page=${currentPage + 1}${qs}`) Next
+          else
+            li.page-item.disabled
+              span.page-link Next
