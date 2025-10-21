@@ -1,11 +1,10 @@
-// services/auth.service.js
 const bcrypt = require('bcryptjs');
 const dao = require('../dao/auth.dao');
 
-/**
- * Login: haalt account op en vergelijkt het wachtwoord met bcrypt.
- * Geeft bij succes een minimal account-object terug (voor in req.session.user).
- */
+
+ //Login: haalt account op en vergelijkt het wachtwoord met bcrypt.
+ //Geeft bij succes een minimal account-object terug (voor in req.session.user).
+
 exports.login = (username, password, cb) => {
   const u = String(username || '').trim().toLowerCase();
   const p = String(password || '');
@@ -40,12 +39,10 @@ exports.login = (username, password, cb) => {
   });
 };
 
-/**
- * Registratie (alleen admin): maakt nieuw account met bcrypt-hash.
- * - username: uniek (lowercased)
- * - role: 'admin' of 'staff' (default 'staff')
- * - staffId: optioneel koppelen aan staff.staff_id
- */
+ // Registratie (alleen admin): maakt nieuw account met bcrypt-hash.
+ // username: uniek 
+ // role: 'admin' of 'staff' (default 'staff')
+
 exports.register = (form, cb) => {
   const username = String(form.username || '').trim().toLowerCase();
   const password = String(form.password || '').trim();

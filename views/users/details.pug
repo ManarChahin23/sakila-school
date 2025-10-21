@@ -21,6 +21,9 @@ block content
         a.btn.btn-primary(href=`/users/${u.customer_id}/edit`) Edit
         a.btn.btn-warning.ms-2(href='/users') Cancel
 
+    if error && error.trim().length
+     div(class="alert alert-danger mt-3")= error
+
     if rentOk
       .alert.alert-success(role='alert', data-autohide='true')
         if rentOk === 'returned'

@@ -127,7 +127,7 @@ const usersDao = {
     });
   },
 
-  // Create zonder adres (address_id=1 om constraints te voldoen)
+  // Create
   create(user, cb) {
     const sql = `
       INSERT INTO customer (store_id, first_name, last_name, email, address_id, active)

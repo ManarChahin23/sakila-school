@@ -33,7 +33,7 @@ function login(req, res) {
   });
 }
 
-// GET /auth/logout (of POST als je dat routepad gebruikt)
+// GET /auth/logout 
 function logout(req, res) {
   req.session.destroy(() => res.redirect('/auth/login'));
 }

@@ -1,10 +1,9 @@
 // dao/auth.dao.js
 const db = require('../config/db');
 
-/**
- * Haal account + (optioneel) staff-naam op via username.
- * Verwacht kolom 'password_hash' in tabel 'account'.
- */
+// Haal account + (optioneel) staff-naam op via username.
+//Verwacht kolom 'password_hash' in tabel 'account'.
+
 exports.findByUsername = (username, cb) => {
   const u = String(username || '').trim().toLowerCase();
 
@@ -32,7 +31,7 @@ exports.findByUsername = (username, cb) => {
       id: row.id,
       username: row.username,
       role: row.role,
-      staff_id: row.staff_id || null,     // ← meegeven
+      staff_id: row.staff_id || null,  
       first_name: row.first_name || null,
       last_name: row.last_name || null,
       password_hash: row.password_hash    // bcrypt-hash
@@ -40,11 +39,10 @@ exports.findByUsername = (username, cb) => {
   });
 };
 
-/**
- * Maak een nieuw account aan. Username moet uniek zijn.
- * - role: 'admin' of 'staff' (default: 'staff')
- * - staffId: optioneel (koppeling aan staff.staff_id)
- */
+
+ //Maak een nieuw account aan. Username moet uniek zijn.
+ // role: 'admin' of 'staff' (default: 'staff')
+ 
 exports.createAccount = (username, passwordHash, role = 'staff', staffId = null, cb) => {
   const u = String(username || '').trim().toLowerCase();
   const r = role === 'admin' ? 'admin' : 'staff';

@@ -12,9 +12,7 @@ exports.create = (req, res) => {
       const msg = err.message === 'NO_INVENTORY'
         ? 'Geen exemplaar beschikbaar in deze store.'
         : (err.message === 'VALIDATION' ? 'Ongeldige invoer voor uitlenen.' : 'Kon uitlening niet aanmaken.');
-      return res
-        .status(400)
-        .render('error', { message: msg, error: { status: 400, stack: '' } });
+      return res.redirect(`/users/${customerId}/details?error=${encodeURIComponent(msg)}`);
     }
     // Terug naar user-details met melding
     res.redirect(`/users/${customerId}/details?rentOk=new`);

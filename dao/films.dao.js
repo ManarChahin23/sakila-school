@@ -1,4 +1,3 @@
-// dao/films.dao.js
 const db = require('../config/db');
 
 /**

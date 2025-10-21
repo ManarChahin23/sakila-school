@@ -1,10 +1,9 @@
-// routes/users.js
 const express = require('express');
 const router = express.Router();
 const svc = require('../services/users.service');
 const rentalsSvc = require('../services/rentals.service');
 
-// ---------- Create ----------
+// Create 
 router.get('/create', (_req, res) => {
   res.render('users/create', {
     title: 'New user',
@@ -34,7 +33,7 @@ router.post('/create', (req, res) => {
   });
 });
 
-// ---------- Lijst (met q + order + paginering) ----------
+// Lijst (met q + order + paginering)
 router.get('/', (req, res) => {
   const q = (req.query.q || '').trim();
   const order = (req.query.order || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
@@ -71,7 +70,7 @@ router.get('/', (req, res) => {
   });
 });
 
-// ---------- Details ----------
+// Details 
 router.get('/:id/details', (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).render('error', { message: 'Ongeldig id', error: { status: 400, stack: '' } });
@@ -85,6 +84,7 @@ router.get('/:id/details', (req, res) => {
         title: `${user.first_name} ${user.last_name}`,
         user,
         success: req.query.success === '1',
+        error: req.query.error,  
         rentOk: req.query.rentOk || null,
         rentErr: req.query.rentErr || null,
         rentals: e2 ? [] : (rentals || [])
@@ -94,7 +94,7 @@ router.get('/:id/details', (req, res) => {
   });
 });
 
-// ---------- Edit ----------
+// Edit
 router.get('/:id/edit', (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).render('error', { message: 'Ongeldig id', error: { status: 400, stack: '' } });
@@ -138,7 +138,7 @@ router.post('/:id/edit', (req, res) => {
   });
 });
 
-// ---------- Soft delete / restore ----------
+// Soft delete / restore 
 router.post('/:id/delete', (req, res) => {
   const id = Number(req.params.id);
   if (!id) return res.status(400).render('error', { message: 'Ongeldig id', error: { status: 400, stack: '' } });
