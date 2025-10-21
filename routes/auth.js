@@ -9,6 +9,6 @@ router.get('/logout', auth.logout);
 
 // Alleen admin mag accounts aanmaken
 router.get('/register', auth.requireRole('admin'), auth.showRegister);
-router.post('/register', auth.register);
+router.post('/register', auth.requireRole('admin'), auth.register);
 
 module.exports = router;
